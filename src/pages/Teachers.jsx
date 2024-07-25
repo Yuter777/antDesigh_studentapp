@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Form, Input, Popconfirm } from "antd";
+import { Table, Button, Modal, Form, Input, Popconfirm, Select } from "antd";
 import axios from "axios";
+
+const { Search } = Input;
+const { Option } = Select;
 
 const Teachers = () => {
   const [teachers, setTeachers] = useState([]);
+  const [filteredTeachers, setFilteredTeachers] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
 
   useEffect(() => {
     fetchTeachers();
@@ -15,6 +21,7 @@ const Teachers = () => {
   const fetchTeachers = async () => {
     const response = await axios.get("http://localhost:3000/teachers");
     setTeachers(response.data);
+    setFilteredTeachers(response.data);
   };
 
   const handleAdd = () => {
@@ -46,6 +53,31 @@ const Teachers = () => {
     }
     fetchTeachers();
     setIsModalVisible(false);
+  };
+
+  const handleSearch = (text) => {
+    setSearchText(text);
+    filterTeachers(text, selectedLevel);
+  };
+
+  const handleLevelChange = (value) => {
+    setSelectedLevel(value);
+    filterTeachers(searchText, value);
+  };
+
+  const filterTeachers = (searchText, level) => {
+    let filtered = teachers;
+    if (searchText) {
+      filtered = filtered.filter(
+        (teacher) =>
+          teacher.firstName.toLowerCase().includes(searchText.toLowerCase()) ||
+          teacher.lastName.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    if (level) {
+      filtered = filtered.filter((teacher) => teacher.level === level);
+    }
+    setFilteredTeachers(filtered);
   };
 
   const columns = [
@@ -93,12 +125,28 @@ const Teachers = () => {
 
   return (
     <div>
-      <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
-        Add Teacher
-      </Button>
+      <div style={{ marginBottom: "16px", display: "flex", gap: "8px" }}>
+        <Search
+          placeholder="Search by name"
+          onSearch={handleSearch}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+        <Select
+          placeholder="Filter by level"
+          onChange={handleLevelChange}
+          allowClear
+        >
+          <Option value="Junior">Junior</Option>
+          <Option value="Middle">Middle</Option>
+          <Option value="Senior">Senior</Option>
+        </Select>
+        <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
+          Add Teacher
+        </Button>
+      </div>
       <Table
         columns={columns}
-        dataSource={teachers}
+        dataSource={filteredTeachers}
         rowKey="id"
         pagination={{ pageSize: 10 }}
       />
@@ -130,7 +178,11 @@ const Teachers = () => {
             label="Level"
             rules={[{ required: true, message: "Please input the level!" }]}
           >
-            <Input />
+            <Select>
+              <Option value="Junior">Junior</Option>
+              <Option value="Middle">Middle</Option>
+              <Option value="Senior">Senior</Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

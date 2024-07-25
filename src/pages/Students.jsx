@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Form, Input, Popconfirm } from "antd";
+import { Table, Button, Modal, Form, Input, Popconfirm, Select } from "antd";
 import axios from "axios";
+
+const { Search } = Input;
+const { Option } = Select;
 
 const Students = () => {
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("");
 
   useEffect(() => {
     fetchStudents();
@@ -15,6 +21,7 @@ const Students = () => {
   const fetchStudents = async () => {
     const response = await axios.get("http://localhost:3000/students");
     setStudents(response.data);
+    setFilteredStudents(response.data);
   };
 
   const handleAdd = () => {
@@ -46,6 +53,40 @@ const Students = () => {
     }
     fetchStudents();
     setIsModalVisible(false);
+  };
+
+  const handleSearch = (text) => {
+    setSearchText(text);
+    filterStudents(text, selectedGroup);
+  };
+
+  const handleGroupChange = (value) => {
+    setSelectedGroup(value);
+    filterStudents(searchText, value);
+  };
+
+  const filterStudents = (searchText, group) => {
+    let filtered = students;
+    if (searchText) {
+      filtered = filtered.filter(
+        (student) =>
+          student.firstName.toLowerCase().includes(searchText.toLowerCase()) ||
+          student.lastName.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    if (group) {
+      filtered = filtered.filter((student) => student.group === group);
+    }
+    setFilteredStudents(filtered);
+  };
+
+  const getGroups = () => {
+    const groups = [...new Set(students.map((student) => student.group))];
+    return groups.map((group) => (
+      <Option key={group} value={group}>
+        {group}
+      </Option>
+    ));
   };
 
   const columns = [
@@ -93,12 +134,26 @@ const Students = () => {
 
   return (
     <div>
-      <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
-        Add Student
-      </Button>
+      <div style={{ marginBottom: "16px", display: "flex", gap: "8px" }}>
+        <Search
+          placeholder="Search by name"
+          onSearch={handleSearch}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+        <Select
+          placeholder="Filter by group"
+          onChange={handleGroupChange}
+          allowClear
+        >
+          {getGroups()}
+        </Select>
+        <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
+          Add Student
+        </Button>
+      </div>
       <Table
         columns={columns}
-        dataSource={students}
+        dataSource={filteredStudents}
         rowKey="id"
         pagination={{ pageSize: 10 }}
       />

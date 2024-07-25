@@ -6,8 +6,6 @@ function Login({ setIsLoggedIn }) {
   const [password, setPassword] = useState("");
 
   const handleSubmit = () => {
-    // Add logic to handle login
-    // For simplicity, assume login is successful
     setIsLoggedIn(true);
   };
 
